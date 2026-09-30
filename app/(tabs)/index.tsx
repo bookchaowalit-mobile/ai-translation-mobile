@@ -1,6 +1,21 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { type Lang, other, searchPhrases, translate } from "../../lib/translation";
+import { listCodec } from "../../lib/persist";
+import {
+  CATEGORIES,
+  type Category,
+  filterPhrases,
+  isSaved,
+  isSavedTranslation,
+  type Lang,
+  other,
+  saveTranslation,
+  type SavedTranslation,
+  translate,
+} from "../../lib/translation";
+import { usePersistentState } from "../../lib/usePersistentState";
+
+const savedCodec = listCodec(isSavedTranslation);
 
 const LABEL: Record<Lang, string> = { en: "English", th: "ไทย (Thai)" };
 
@@ -8,8 +23,13 @@ export default function TranslateScreen() {
   const [from, setFrom] = useState<Lang>("en");
   const [input, setInput] = useState("Where is the toilet?");
   const result = useMemo(() => translate(input, from), [input, from]);
-  const phrases = useMemo(() => searchPhrases(""), []);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<Category | null>(null);
+  const phrases = useMemo(() => filterPhrases(query, category), [query, category]);
+  const [saved, setSaved] = usePersistentState<SavedTranslation[]>("translate.saved.v1", [], savedCodec);
   const to = other(from);
+  const alreadySaved = isSaved(saved, from, input);
+  const canSave = input.trim() !== "" && result.text.trim() !== "" && !alreadySaved;
 
   const swap = () => {
     setInput(result.text);
@@ -53,8 +73,71 @@ export default function TranslateScreen() {
           </Text>
         )}
       </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={alreadySaved ? "Translation already saved" : "Save this translation"}
+        accessibilityState={{ disabled: !canSave }}
+        disabled={!canSave}
+        onPress={() => setSaved((list) => saveTranslation(list, from, input, result.text, Date.now()))}
+        style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+      >
+        <Text style={styles.saveText}>{alreadySaved ? "★ Saved" : "☆ Save translation"}</Text>
+      </Pressable>
+
+      {saved.length > 0 && (
+        <>
+          <Text style={styles.section}>Saved ({saved.length})</Text>
+          {saved.map((s) => (
+            <View key={s.id} style={[styles.phrase, styles.savedRow]}>
+              <Pressable
+                accessibilityHint="Puts this saved text back in the input"
+                accessibilityRole="button"
+                onPress={() => {
+                  setFrom(s.from);
+                  setInput(s.source);
+                }}
+                style={styles.flex}
+              >
+                <Text style={styles.phraseMain}>{s.source}</Text>
+                <Text style={styles.phraseSub}>{s.target}</Text>
+              </Pressable>
+              <Pressable
+                accessibilityLabel={`Delete saved translation ${s.source}`}
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => setSaved((list) => list.filter((x) => x.id !== s.id))}
+              >
+                <Text style={styles.delete}>Delete</Text>
+              </Pressable>
+            </View>
+          ))}
+        </>
+      )}
 
       <Text style={styles.section}>Phrasebook</Text>
+      <TextInput
+        accessibilityLabel="Search phrasebook in English or Thai"
+        autoCorrect={false}
+        onChangeText={setQuery}
+        placeholder="Search phrases…"
+        style={styles.search}
+        value={query}
+      />
+      <View style={styles.chips}>
+        {[null, ...CATEGORIES].map((c) => (
+          <Pressable
+            accessibilityLabel={c === null ? "All categories" : `Category ${c}`}
+            accessibilityRole="button"
+            accessibilityState={{ selected: category === c }}
+            key={c ?? "all"}
+            onPress={() => setCategory(c)}
+            style={[styles.chip, category === c && styles.chipActive]}
+          >
+            <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c ?? "all"}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {phrases.length === 0 && <Text style={styles.phraseSub}>No phrases match.</Text>}
       {phrases.map((p) => (
         <Pressable
           accessibilityHint="Puts this phrase in the input"
@@ -97,4 +180,17 @@ const styles = StyleSheet.create({
   phrase: { backgroundColor: "#fff", borderRadius: 8, padding: 12 },
   phraseMain: { fontSize: 16, color: "#222" },
   phraseSub: { fontSize: 13, color: "#666", marginTop: 2 },
+  saveButton: { alignSelf: "flex-start", backgroundColor: "#2F6DB5", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
+  saveButtonDisabled: { backgroundColor: "#8A9BB0" },
+  saveText: { color: "#fff", fontWeight: "600" },
+  savedRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  flex: { flex: 1 },
+  delete: { color: "#B00020", fontWeight: "600" },
+  search: { backgroundColor: "#fff", borderColor: "#ccc", borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: { borderRadius: 14, borderWidth: 1, borderColor: "#2F6DB5", paddingHorizontal: 10, paddingVertical: 4 },
+  chipActive: { backgroundColor: "#2F6DB5" },
+  chipText: { color: "#2F6DB5", textTransform: "capitalize" },
+  chipTextActive: { color: "#fff" },
+
 });

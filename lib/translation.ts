@@ -157,3 +157,55 @@ export function searchPhrases(query: string): Phrase[] {
   if (!q) return [...PHRASES];
   return PHRASES.filter((p) => p.en.includes(q) || p.th.includes(q));
 }
+
+export type Category = Phrase["category"];
+export const CATEGORIES: readonly Category[] = ["greetings", "basics", "food", "travel", "people"];
+
+/** Phrasebook search narrowed to one category (null = all). */
+export function filterPhrases(query: string, category: Category | null): Phrase[] {
+  return searchPhrases(query).filter((p) => category === null || p.category === category);
+}
+
+export interface SavedTranslation {
+  id: string;
+  from: Lang;
+  source: string;
+  target: string;
+  savedAt: number;
+}
+
+export const MAX_SAVED = 50;
+
+/** Saves a translation at the top; the same source text (per direction) is replaced, not duplicated. */
+export function saveTranslation(
+  list: SavedTranslation[],
+  from: Lang,
+  source: string,
+  target: string,
+  now: number,
+): SavedTranslation[] {
+  const text = source.trim();
+  if (!text || !target.trim()) return list;
+  const key = normalize(text);
+  const rest = list.filter((s) => !(s.from === from && normalize(s.source) === key));
+  return [{ id: `${now.toString(36)}-${rest.length}`, from, source: text, target: target.trim(), savedAt: now }, ...rest].slice(0, MAX_SAVED);
+}
+
+export function isSaved(list: SavedTranslation[], from: Lang, source: string): boolean {
+  const key = normalize(source);
+  return key !== "" && list.some((s) => s.from === from && normalize(s.source) === key);
+}
+
+/** Type guard used when loading saved translations from local storage. */
+export function isSavedTranslation(value: unknown): value is SavedTranslation {
+  if (typeof value !== "object" || value === null) return false;
+  const s = value as Record<string, unknown>;
+  return (
+    typeof s.id === "string" &&
+    (s.from === "en" || s.from === "th") &&
+    typeof s.source === "string" &&
+    typeof s.target === "string" &&
+    typeof s.savedAt === "number" &&
+    Number.isFinite(s.savedAt)
+  );
+}
