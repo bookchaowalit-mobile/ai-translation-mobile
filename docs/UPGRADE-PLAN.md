@@ -32,3 +32,14 @@ Score: 6/10 (was 5/10) — saved translations persist and the phrasebook is sear
 - Accessibility: save/delete/category controls labelled with state; profile links get link roles.
 - Advisories: `overrides.postcss ^8.5.28` clears the high-severity PostCSS advisory in Expo metro-config (minor bump). Remaining `image-size` (metro, bundler-only), `uuid` (via `xcode`) and `decode-uri-component` (via `query-string@7`) need an Expo SDK major upgrade; deliberately not auto-fixed.
 - Verified: typecheck, lint, 20 vitest tests, Android `expo export` bundle.
+
+## Done in this pass (pass 3)
+
+Score: 6.5/10 (was 6/10) — edge-case hunt in `lib/translation.ts` (`normalize`).
+
+- Bug: a zero-width space between Thai words (widely used as a Thai line-break hint) or a BOM
+  turned known words into "unknown" segments; they are now treated as spaces.
+- Bug: Thai SARA AM typed as NIKHAHIT + SARA AA (either mark order, e.g. "น้ํา") never matched
+  dictionary entries such as น้ำ / ห้องน้ำ, in both translate and phrasebook search.
+- Bug: full-width Latin input ("ｈｅｌｌｏ！") was not recognised; input is now NFKC-folded.
+- Verified: typecheck, `expo lint`, vitest (23), Android `expo export` bundle; new tests fail on the old code.

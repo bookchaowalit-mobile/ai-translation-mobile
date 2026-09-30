@@ -67,9 +67,20 @@ export interface Translation {
   unknown: string[];
 }
 
-/** Lower-cases, folds curly quotes and strips punctuation other than apostrophes. */
+/**
+ * Lower-cases, folds curly quotes and strips punctuation other than apostrophes.
+ *
+ * Also folds input quirks that made known words "unknown":
+ * - full-width Latin ("ｈｅｌｌｏ") via NFKC;
+ * - Thai SARA AM typed as NIKHAHIT + SARA AA ("น้ํา" vs "น้ำ"), in either mark order;
+ * - zero-width spaces (common as Thai word separators), joiners and BOM, treated as spaces.
+ */
 export function normalize(text: string): string {
   return text
+    .normalize("NFKC")
+    .replace(/\u0E4D([\u0E48-\u0E4B]?)\u0E32/g, "$1\u0E33")
+    .replace(/([\u0E48-\u0E4B])\u0E4D\u0E32/g, "$1\u0E33")
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, " ")
     .toLowerCase()
     .replace(/[‘’]/g, "'")
     .replace(/[.,!?;:"()[\]{}]/g, " ")

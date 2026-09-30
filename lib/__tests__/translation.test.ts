@@ -66,3 +66,20 @@ describe("helpers", () => {
     expect(translate("   ", "en")).toMatchObject({ text: "", coverage: 0, unknown: [] });
   });
 });
+
+describe("pass 3 edge cases", () => {
+  it("treats zero-width spaces between Thai words as word breaks", () => {
+    const r = translate("ขอบคุณ\u200Bมาก\uFEFF", "th");
+    expect(r.unknown).toEqual([]);
+    expect(r.text).toBe("thank you very");
+  });
+  it("recognises SARA AM typed as NIKHAHIT + SARA AA", () => {
+    // "น้ำ" (water) keyed as น + ้ + ํ + า, and as น + ํ + ้ + า.
+    expect(translate("\u0E19\u0E49\u0E4D\u0E32", "th").text).toBe("water");
+    expect(translate("\u0E19\u0E4D\u0E49\u0E32", "th").text).toBe("water");
+    expect(searchPhrases("\u0E19\u0E49\u0E4D\u0E32").map((p) => p.en)).toContain("water");
+  });
+  it("folds full-width Latin input", () => {
+    expect(translate("ｈｅｌｌｏ！", "en").text).toBe("สวัสดี");
+  });
+});
