@@ -4,6 +4,17 @@ React Native mobile app (Expo) for **Translation**.
 
 Part of [Chaowalit Greepoke](https://bookchaowalit.com)'s 101 Portfolio Projects.
 
+## Features
+
+- **Offline EN ⇄ TH translator** (Translate tab): type English or Thai and get an
+  instant translation from a built-in phrasebook. Whole phrases win over single
+  words, and unspaced Thai is segmented by longest dictionary match (so ห้องน้ำ
+  is "toilet", not "room + water"). Words not in the dictionary are kept and
+  listed, with a coverage percentage. Tap ⇄ to swap direction, or tap any
+  phrasebook entry to use it.
+- Translation logic lives in `lib/translation.ts` (pure TypeScript, unit-tested).
+  It is a phrasebook, not machine translation; see `docs/UPGRADE-PLAN.md`.
+
 ## Tech Stack
 
 - **Framework:** Expo SDK 53 + Expo Router
@@ -17,6 +28,19 @@ Part of [Chaowalit Greepoke](https://bookchaowalit.com)'s 101 Portfolio Projects
 npm install
 npx expo start
 ```
+
+## Scripts
+
+```bash
+npm run typecheck   # tsc --noEmit
+npm run lint        # expo lint (eslint-config-expo)
+npm test            # vitest unit tests for lib/
+npx expo export --platform android --output-dir dist   # JS bundle smoke check
+```
+
+CI (`.github/workflows/build.yml`) runs all of the above with `npm ci`; failures
+are not masked. The EAS preview build only runs on `main` when the `EXPO_TOKEN`
+secret is configured (run `eas init` once to link the project).
 
 ## Build
 

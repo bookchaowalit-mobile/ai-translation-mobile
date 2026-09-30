@@ -1,125 +1,100 @@
-import { StyleSheet, Text, View, ScrollView, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { useMemo, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { type Lang, other, searchPhrases, translate } from "../../lib/translation";
 
-export default function HomeScreen() {
+const LABEL: Record<Lang, string> = { en: "English", th: "ไทย (Thai)" };
+
+export default function TranslateScreen() {
+  const [from, setFrom] = useState<Lang>("en");
+  const [input, setInput] = useState("Where is the toilet?");
+  const result = useMemo(() => translate(input, from), [input, from]);
+  const phrases = useMemo(() => searchPhrases(""), []);
+  const to = other(from);
+
+  const swap = () => {
+    setInput(result.text);
+    setFrom(to);
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Translation</Text>
-        <Text style={styles.subtitle}>Translation — Mobile app (expo)</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <View style={styles.langRow}>
+        <Text style={styles.lang}>{LABEL[from]}</Text>
+        <Pressable
+          accessibilityLabel={`Swap to ${LABEL[to]} input`}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={swap}
+          style={styles.swap}
+        >
+          <Text style={styles.swapText}>⇄</Text>
+        </Pressable>
+        <Text style={styles.lang}>{LABEL[to]}</Text>
       </View>
 
-      <View style={styles.cardGrid}>
-        <FeatureCard
-          icon="rocket"
-          title="Getting Started"
-          description="Welcome to the mobile version. Start building your experience."
-        />
-        <FeatureCard
-          icon="code"
-          title="Tech Stack"
-          description="Built with Expo, React Native, and TypeScript."
-        />
-        <FeatureCard
-          icon="phone-portrait"
-          title="Cross-Platform"
-          description="Runs on iOS, Android, and Web from a single codebase."
-        />
-      </View>
+      <TextInput
+        accessibilityLabel={`Text in ${LABEL[from]}`}
+        autoCorrect={false}
+        multiline
+        onChangeText={setInput}
+        placeholder={from === "en" ? "Type English…" : "พิมพ์ภาษาไทย…"}
+        style={styles.input}
+        value={input}
+      />
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Part of Chaowalit Greepoke's 101 Portfolio Projects
+      <View accessibilityLiveRegion="polite" style={styles.output}>
+        <Text selectable style={styles.outputText}>
+          {result.text || "—"}
         </Text>
-        <Link href="https://bookchaowalit.com" asChild>
-          <Pressable>
-            <Text style={styles.link}>bookchaowalit.com</Text>
-          </Pressable>
-        </Link>
+        {result.segments.length > 0 && (
+          <Text style={styles.coverage}>
+            Dictionary coverage {Math.round(result.coverage * 100)}%
+            {result.unknown.length > 0 && ` · not found: ${result.unknown.join(", ")}`}
+          </Text>
+        )}
       </View>
+
+      <Text style={styles.section}>Phrasebook</Text>
+      {phrases.map((p) => (
+        <Pressable
+          accessibilityHint="Puts this phrase in the input"
+          accessibilityRole="button"
+          key={p.en}
+          onPress={() => setInput(p[from])}
+          style={styles.phrase}
+        >
+          <Text style={styles.phraseMain}>{p[from]}</Text>
+          <Text style={styles.phraseSub}>
+            {p[to]} · {p.category}
+          </Text>
+        </Pressable>
+      ))}
     </ScrollView>
   );
 }
 
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  description: string;
-}) {
-  return (
-    <View style={styles.card}>
-      <Ionicons name={icon} size={28} color="#4A90D9" />
-      <Text style={styles.cardTitle}>{title}</Text>
-      <Text style={styles.cardDescription}>{description}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-  },
-  header: {
-    backgroundColor: "#4A90D9",
-    padding: 24,
-    paddingTop: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.85)",
-    lineHeight: 20,
-  },
-  cardGrid: {
-    padding: 16,
-    gap: 12,
-  },
-  card: {
+  container: { flex: 1, backgroundColor: "#F5F5F5" },
+  content: { padding: 16, gap: 10 },
+  langRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  lang: { flex: 1, textAlign: "center", fontWeight: "600", color: "#333" },
+  swap: { backgroundColor: "#2F6DB5", borderRadius: 20, width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  swapText: { color: "#fff", fontSize: 20 },
+  input: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    alignItems: "center",
-    gap: 8,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 90,
+    fontSize: 17,
+    textAlignVertical: "top",
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  footer: {
-    padding: 24,
-    alignItems: "center",
-    gap: 8,
-  },
-  footerText: {
-    fontSize: 12,
-    color: "#999",
-  },
-  link: {
-    fontSize: 14,
-    color: "#4A90D9",
-    fontWeight: "500",
-  },
+  output: { backgroundColor: "#E8F0FA", borderRadius: 8, padding: 12, gap: 6 },
+  outputText: { fontSize: 20, color: "#1A1A1A" },
+  coverage: { fontSize: 12, color: "#555" },
+  section: { marginTop: 8, fontSize: 16, fontWeight: "700", color: "#333" },
+  phrase: { backgroundColor: "#fff", borderRadius: 8, padding: 12 },
+  phraseMain: { fontSize: 16, color: "#222" },
+  phraseSub: { fontSize: 13, color: "#666", marginTop: 2 },
 });
