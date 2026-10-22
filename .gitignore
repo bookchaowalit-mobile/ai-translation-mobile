@@ -17,3 +17,5 @@ web-build/
 # @generated
 ios/
 android/
+
+coverage/
