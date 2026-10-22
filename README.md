@@ -45,9 +45,11 @@ npm test            # vitest unit tests for lib/
 npx expo export --platform android --output-dir dist   # JS bundle smoke check
 ```
 
-CI (`.github/workflows/ci.yml`) runs all of the above with `npm ci`; failures
-are not masked. The EAS preview build only runs on `main` when the `EXPO_TOKEN`
-secret is configured (run `eas init` once to link the project).
+CI (`.github/workflows/ci.yml`) calls the shared `bookchaowalit/platform-ci-workflows`
+`ci-node.yml` and `security.yml` (v1.1.1, SHA-pinned): `npm ci`, lint, typecheck, tests,
+the Android JS bundle export above, plus Gitleaks, Semgrep, OSV-Scanner and Trivy.
+Failures are not masked. There is no EAS / Expo cloud build in CI: that needs an
+owner-linked Expo account (owner action).
 
 ## Build
 
