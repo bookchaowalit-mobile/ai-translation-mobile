@@ -44,3 +44,20 @@ reason = "decode-uri-component DoS; fixed only in ESM-only 0.5.0, but query-stri
 id = "GHSA-w5hq-g745-h8pq"
 ignoreUntil = 2027-01-22
 reason = "uuid v3/v5/v6 buffer bounds; via xcode (expo prebuild iOS project editing), which only calls v4 without a caller buffer. Fixed only in uuid 11+."
+
+# Reviewed 2026-11-27 (v1.6.6 bump). Fixed only in new majors that Expo SDK 53 tooling does not accept.
+
+[[IgnoredVulns]]
+id = "GHSA-3g3m-2fjr-6pw4"
+ignoreUntil = 2027-01-22
+reason = "glob AbortSignal walk keeps running after abort; fixed only in glob 14; glob 10 sits in Expo SDK 53 / metro tooling, which globs our own sources and never passes a signal."
+
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2027-01-22
+reason = "minimatch globparts amplification DoS; fixed only in minimatch 11; dev/build tooling (expo cli, metro, typescript-eslint) matches our own fixed patterns, never user input."
+
+[[IgnoredVulns]]
+id = "GHSA-qr28-fpjm-wq7f"
+ignoreUntil = 2027-01-22
+reason = "decode-uri-component quadratic DoS; fixed only in ESM-only 0.5.1, but query-string 7 (required by expo-router 5.1) needs the CJS 0.2.x. Worst case a malformed deep link stalls this local app instance; no server."
